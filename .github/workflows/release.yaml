@@ -1,0 +1,104 @@
+# Copyright The Conforma Contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+name: Release
+
+on:
+  workflow_dispatch:
+  # schedule:
+    # - cron: '0 9 * * 3'
+
+# Allow only one instance of this workflow to run at a time.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+
+  get_info:
+
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.versioning.outputs.changed }}
+      version: ${{ steps.versioning.outputs.version }}
+      changelog: ${{ steps.versioning.outputs.changelog }}
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine next version and generate changelog
+        id: versioning
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          change_path: "policy/"
+
+  create_release:
+
+    needs: get_info
+    if: needs.get_info.outputs.changed == 'true'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Delete Rolling Release and Tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          NEW_TAG="${{ needs.get_info.outputs.version }}"
+          ROLLING_TAG="snapshot"
+
+          gh release delete "$ROLLING_TAG" --yes || :
+
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"          
+
+          git tag -a -f "$NEW_TAG"
+          git tag -a -f "$ROLLING_TAG"
+          git push --tags -f
+        
+      - name: Versioned release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2
+        with:
+          make_latest: false
+          name: ${{ needs.get_info.outputs.version }}
+          tag_name: ${{ needs.get_info.outputs.version }}
+          generate_release_notes: false
+          files: policy/*
+      
+      - name: Rolling release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2
+        with:
+          make_latest: true
+          name: Rolling release
+          body: Stable rolling release, currently the same as `${{ needs.get_info.outputs.version }}`.
+          tag_name: "snapshot"
+          generate_release_notes: false
+          files: policy/*
