@@ -87,9 +87,10 @@ jobs:
     if: ${{ github.repository == 'conforma/policy' && needs.get_info.outputs.changed == 'true' && needs.get_info.outputs.changelog != '' }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     outputs:
-      release_notes: ${{ steps.run_gemini.outputs.summary }}
+      release_notes: ${{ steps.extract_notes.outputs.release_notes }}
 
     steps:
 
@@ -99,22 +100,20 @@ jobs:
           egress-policy: audit
           disable-telemetry: true
 
-      - name: Run Gemini
-        id: run_gemini
-        uses: google-github-actions/run-gemini-cli@f77273f4c914e4bf38440cf36a0369cb64a37489 # v0
-        env:
-          GEMINI_CLI_TRUST_WORKSPACE: 'true'
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          settings: |-
-            {
-              "sandbox": false,
-              "autoAccept": false,
-              "coreTools": []
-            }
+          fetch-depth: 0
+
+      - name: Generate release notes
+        id: generate_notes
+        uses: anthropics/claude-code-action@a26b07d8c778b0c43f64618e5fd29fd0f8af72e8 # v1.0.250
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 3 --allowedTools 'Read' --json-schema '{\"type\":\"object\",\"properties\":{\"release_notes\":{\"type\":\"string\"}},\"required\":[\"release_notes\"]}'"
           prompt: |
             Make a release notes based on all notable changes since the tag
-            ${{needs.get_info.outputs.latest_tag}}. I will provide you with 
+            ${{needs.get_info.outputs.latest_tag}}. I will provide you with
             the changelog.
             Categorize it nicely with emojis, output as Markdown.
             For each change that you mention in the release notes:
@@ -129,6 +128,16 @@ jobs:
             The changelog is following below:
 
             ${{ needs.get_info.outputs.changelog}}
+
+      - name: Extract release notes
+        id: extract_notes
+        env:
+          STRUCTURED_OUTPUT: ${{ steps.generate_notes.outputs.structured_output }}
+        run: |
+          DELIMITER=$(openssl rand -hex 8)
+          echo "release_notes<<$DELIMITER" >> "$GITHUB_OUTPUT"
+          echo "$STRUCTURED_OUTPUT" | jq -r '.release_notes' >> "$GITHUB_OUTPUT"
+          echo "$DELIMITER" >> "$GITHUB_OUTPUT"
 
 
   create_release:
