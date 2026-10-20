@@ -111,7 +111,10 @@ jobs:
         uses: anthropics/claude-code-action@a26b07d8c778b0c43f64618e5fd29fd0f8af72e8 # v1.0.250
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 3 --allowedTools 'Read' --json-schema '{\"type\":\"object\",\"properties\":{\"release_notes\":{\"type\":\"string\"}},\"required\":[\"release_notes\"]}'"
+          claude_args: |
+            --max-turns 3
+            --allowedTools 'Read'
+            --json-schema '{"type":"object","properties":{"release_notes":{"type":"string"}},"required":["release_notes"]}'
           prompt: |
             Make a release notes based on all notable changes since the tag
             ${{needs.get_info.outputs.latest_tag}}. I will provide you with
