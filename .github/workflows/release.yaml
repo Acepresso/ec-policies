@@ -116,7 +116,10 @@ jobs:
             Make a release notes based on all notable changes since the tag
             ${{needs.get_info.outputs.latest_tag}}. I will provide you with
             the changelog.
-            Categorize it nicely with emojis, output as Markdown.
+            Categorize it nicely with emojis, return the result via the structured-output
+            schema. Set `release_notes` to a Markdown string. Do not return prose outside
+            the structured output.
+
             For each change that you mention in the release notes:
               - Summarize the change in one line
               - Put jira link in the beginning of the line, if the change has a
@@ -127,7 +130,6 @@ jobs:
             The summary should also refer to changes in policies and policy rules.
 
             The changelog is following below:
-
             ${{ needs.get_info.outputs.changelog}}
 
       - name: Extract release notes
