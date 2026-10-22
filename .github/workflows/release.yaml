@@ -109,8 +109,8 @@ jobs:
         run: |
           set -euo pipefail
           npm install --global @google/gemini-cli@0.65.0
-          settings_file="$RUNNER_TEMP/gemini-settings.json"
-          printf '{"tools":{"core":[]}}\n' > "$settings_file"
+          mkdir -p "$HOME/.gemini"
+          printf '{"security":{"auth":{"selectedType":"gemini-api-key"}},"tools":{"core":[]}}\n' > "$HOME/.gemini/settings.json"
 
           prompt="Make release notes based on all notable changes since the tag ${LATEST_TAG}.
           Categorize the changes with emojis and output Markdown.
@@ -126,7 +126,7 @@ jobs:
           Changelog:
           ${CHANGELOG}"
 
-          summary="$(GEMINI_CLI_SYSTEM_SETTINGS_PATH="$settings_file" gemini --prompt "$prompt")"
+          summary="$(gemini --prompt "$prompt")"
           if [[ -z "${summary//[[:space:]]/}" ]]; then
             echo "Gemini returned empty release notes" >&2
             exit 1
