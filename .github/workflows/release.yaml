@@ -126,7 +126,7 @@ jobs:
           Changelog:
           ${CHANGELOG}"
 
-          summary="$(gemini --prompt "$prompt")"
+          summary="$(printf '%s' "$prompt" | gemini)"
           if [[ -z "${summary//[[:space:]]/}" ]]; then
             echo "Gemini returned empty release notes" >&2
             exit 1
