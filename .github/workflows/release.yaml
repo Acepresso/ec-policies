@@ -132,6 +132,8 @@ jobs:
             exit 1
           fi
 
+          echo "$summary"
+
           delimiter="GEMINI_RELEASE_NOTES_$(openssl rand -hex 16)"
           {
             echo "summary<<${delimiter}"
@@ -163,7 +165,8 @@ jobs:
       - name: Tag
         run: |
           set -e
-          git fetch --tags
+          #git fetch --tags
+          git fetch origin main:main --tags
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"          
           
