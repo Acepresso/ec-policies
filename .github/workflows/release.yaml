@@ -110,7 +110,7 @@ jobs:
           set -euo pipefail
           #npm install --global @google/gemini-cli@0.65.0
           mkdir -p "$HOME/.gemini"
-          printf '{"security":{"auth":{"selectedType":"gemini-api-key"}},"tools":{"core":[]}}\n' > "$HOME/.gemini/settings.json"
+          printf '{"security":{"auth":{"selectedType":"gemini-api-key"}}}\n' > "$HOME/.gemini/settings.json"
 
           prompt="Make release notes based on all notable changes since the tag ${LATEST_TAG}.
           Categorize the changes with emojis and output Markdown.
