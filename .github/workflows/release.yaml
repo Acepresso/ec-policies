@@ -108,7 +108,7 @@ jobs:
           CHANGELOG: ${{ needs.get_info.outputs.changelog }}
         run: |
           set -euo pipefail
-          npm install --global @google/gemini-cli@0.65.0
+          #npm install --global @google/gemini-cli@0.65.0
           mkdir -p "$HOME/.gemini"
           printf '{"security":{"auth":{"selectedType":"gemini-api-key"}},"tools":{"core":[]}}\n' > "$HOME/.gemini/settings.json"
 
@@ -126,7 +126,8 @@ jobs:
           Changelog:
           ${CHANGELOG}"
 
-          summary="$(gemini --prompt "$prompt")"
+          #summary="$(gemini --prompt "$prompt")"
+          summary="$(npx @google/gemini-cli@0.65.0 --prompt "$prompt")"
           if [[ -z "${summary//[[:space:]]/}" ]]; then
             echo "Gemini returned empty release notes" >&2
             exit 1
